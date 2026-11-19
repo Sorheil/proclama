@@ -10,5 +10,6 @@ if (-not $weed) { throw "weed.exe introuvable : voir README.md (etape 2)." }
 $data = Join-Path $root ".local\s3-data"
 New-Item -ItemType Directory -Force -Path $data | Out-Null
 Write-Host "[s3] SeaweedFS sur http://localhost:8333 (donnees : $data)" -ForegroundColor Cyan
-& $weed server "-dir=$data" -s3 "-s3.config=$root\scripts\s3-dev.json" `
-  -ip=127.0.0.1 -volume.port=8081 -master.volumeSizeLimitMB=256 -volume.max=0
+# Tous les arguments sont entre guillemets : PowerShell 5.1 coupe sinon "-ip=127.0.0.1" au premier point.
+& $weed server "-dir=$data" "-s3" "-s3.config=$root\scripts\s3-dev.json" `
+  "-ip=127.0.0.1" "-volume.port=8081" "-master.volumeSizeLimitMB=256" "-volume.max=0"

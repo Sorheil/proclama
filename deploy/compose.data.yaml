@@ -1,0 +1,40 @@
+# Services de données : base PostgreSQL et stockage objet S3 (SeaweedFS).
+# Aucun port publié : seuls les services du réseau "backend" peuvent les joindre.
+name: proclama
+
+services:
+  db:
+    image: ${POSTGRES_IMAGE:-postgres:17-alpine}
+    environment:
+      POSTGRES_DB: proclama
+      POSTGRES_USER: proclama
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proclama -d proclama"]
+      interval: 5s
+      retries: 10
+    networks: [backend]
+
+  s3:
+    image: ${S3_IMAGE:-chrislusf/seaweedfs:3.80}
+    # On remplace l'entrypoint pour générer le fichier d'identités depuis les variables, puis lancer weed.
+    # "$$" empêche Compose d'interpoler : c'est le shell du conteneur qui lira la variable.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        echo "{\"identities\":[{\"name\":\"proclama\",\"credentials\":[{\"accessKey\":\"$$S3_ACCESS_KEY\",\"secretKey\":\"$$S3_SECRET_KEY\"}],\"actions\":[\"Admin\",\"Read\",\"Write\",\"List\",\"Tagging\"]}]}" > /tmp/s3.json &&
+        exec weed server -dir=/data -s3 -s3.config=/tmp/s3.json -master.volumeSizeLimitMB=256 -volume.max=0
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY manquant dans .env}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY manquant dans .env}
+    volumes: ["s3data:/data"]
+    networks: [backend]
+
+volumes:
+  pgdata:
+  s3data:
+
+networks:
+  backend:
+    internal: true
