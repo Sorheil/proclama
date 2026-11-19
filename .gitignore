@@ -8,5 +8,5 @@ target/
 .idea/
 *.log
 .vagrant/
-# secrets de déploiement (fichiers créés par l'équipe pour Docker)
 deploy/.env
+resultat.csv
